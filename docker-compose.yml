@@ -1,0 +1,60 @@
+version: "3.8"
+
+networks:
+  magento:
+
+services:
+  # Application
+  magento:
+    image: alexcheng/magento2
+    container_name: magento
+    restart: unless-stopped
+    ports:
+      - 8005:80
+    env_file:
+      - .env
+    volumes:
+      - ./magento:/var/www/html/app/design/frontend/mytheme/default
+    networks:
+      - magento
+
+  # Database Server
+  mysql:
+    image: mysql:5.7.38
+    container_name: mysql
+    restart: unless-stopped
+    ports:
+      - 3306:3306
+    env_file:
+      - .env
+    environment:
+      # automatically creates database and user
+      - MYSQL_ALLOW_EMPTY_PASSWORD = 1
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - ./mysql:/var/lib/mysql
+    networks:
+      - magento
+
+  # Database GUI Server
+  phpmyadmin:
+    image: phpmyadmin:5.2-apache
+    container_name: phpmyadmin
+    restart: unless-stopped
+    ports:
+      - 8001:80
+    depends_on:
+      - mysql
+    env_file:
+      - .env
+    environment:
+      # automatically logs in given user
+      - PMA_HOST=mysql
+      - PMA_PORT=3306
+      - PMA_USER=root
+      - PMA_PASSWORD=${MYSQL_ROOT_PASSWORD}
+    networks:
+      - magento
